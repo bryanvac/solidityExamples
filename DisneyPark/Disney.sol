@@ -72,7 +72,7 @@ contract Disney {
     }
 
     function balanceTokensUser() public view returns (uint){
-        return usersDisney[msg.sender]._tokensBuyed;
+        return usersDisney[msg.sender]._tokensRemaining;
     }
 
     function balanceTokensDisney() public view returns (uint){
@@ -122,11 +122,14 @@ contract Disney {
         return _attractions[_name].state;
     }
 
-    function useAttraction(string memory _name) public payable isUser(msg.sender) returns (bool){
-        require(_attractions[_name].state == true, "The attraction is disabled, use other attraction");
-        require(usersDisney[msg.sender]._tokensBuyed > _attractions[_name].price, "You dont have enough tokens") ;
+    function useAttraction(string memory _name) public payable isUser(msg.sender) returns (bool, uint){
+        require(isEnabledAttraction(_name) == true, "The attraction is disabled, use other attraction");
+        require(balanceTokensUser() > _attractions[_name].price, "You dont have enough tokens") ;
 
-        //TO DO
-    
+        _token.transfer(_owner, _attractions[_name].price);
+        usersDisney[msg.sender]._tokensSpent.add(_attractions[_name].price);
+        usersDisney[msg.sender]._tokensRemaining.sub(_attractions[_name].price);
+
+        return (true, usersDisney[msg.sender]._tokensRemaining);
     }
 }
