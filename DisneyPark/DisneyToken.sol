@@ -1,9 +1,4 @@
 // SPDX-License-Identifier: MIT
-
-// File: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.3.2/contracts/utils/Context.sol
-
-
-
 pragma solidity ^0.8.0;
 
 /**
@@ -249,6 +244,8 @@ pragma solidity ^0.8.0;
 contract ERC20 is Context, IERC20, IERC20Metadata {
     mapping(address => uint256) private _balances;
 
+    address public _owner;
+
     mapping(address => mapping(address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
@@ -299,7 +296,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
      * {IERC20-balanceOf} and {IERC20-transfer}.
      */
     function decimals() public view virtual override returns (uint8) {
-        return 10;
+        return 2;
     }
 
     /**
@@ -436,7 +433,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         address sender,
         address recipient,
         uint256 amount
-    ) internal virtual {
+    ) public virtual {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
@@ -467,12 +464,16 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         require(account != address(0), "ERC20: mint to the zero address");
 
         _beforeTokenTransfer(address(0), account, amount);
-
+        _owner = account;
         _totalSupply += amount;
         _balances[account] += amount;
         emit Transfer(address(0), account, amount);
 
         _afterTokenTransfer(address(0), account, amount);
+    }
+
+    function getOwnerToken() public view returns (address){
+        return _owner;
     }
 
     /**
@@ -578,7 +579,7 @@ pragma solidity ^0.8.3;
 
 
 contract DisneyToken is ERC20, Ownable {
-    uint256 public maxSupply = 100000000000000; // Ten thousand
+    uint256 public maxSupply = 1000000; // Ten thousand
 
     constructor() ERC20("DisneyToken", "DSN") {
         _mint(_msgSender(), maxSupply);

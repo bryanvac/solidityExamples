@@ -17,6 +17,7 @@ contract Disney {
 
     DisneyToken private _token;
     address payable public _owner;
+    address public _contract ;
     mapping (address => Client) public usersDisney;
     uint256 tokensTotalbuyed;
 
@@ -25,6 +26,7 @@ contract Disney {
     constructor() {
         _token = new DisneyToken();
         _owner = payable(msg.sender);
+        _contract = address(this);
     }
 
     modifier isOwner(address _address) {
@@ -33,12 +35,12 @@ contract Disney {
     }
 
     modifier isUser(address _address) {
-        require(msg.sender != _owner, "You are the owner");
+        require(msg.sender != _owner, "You are the owner, you can`t use the attraction");
         _;
     }
 
     function priceTokens(uint _tokensAmount) internal pure returns (uint) {
-        return _tokensAmount.mul(0.001 ether);
+        return _tokensAmount.mul(0.1 ether);
     }
 
     function buyTokensDisney(uint _tokensDisney) public payable returns (bool){
@@ -71,8 +73,8 @@ contract Disney {
 
     }
 
-    function balanceTokensUser() public view returns (uint){
-        return usersDisney[msg.sender]._tokensRemaining;
+    function myTokens() public view returns (uint){
+        return _token.balanceOf(msg.sender);
     }
 
     function balanceTokensDisney() public view returns (uint){
@@ -108,6 +110,7 @@ contract Disney {
         require(_attractions[_name].state == true, "The attraction has already been disabled");
         _attractions[_name].state = false;
 
+        emit damagedAttraction(_name);
         return true;
     }
 
@@ -124,12 +127,50 @@ contract Disney {
 
     function useAttraction(string memory _name) public payable isUser(msg.sender) returns (bool, uint){
         require(isEnabledAttraction(_name) == true, "The attraction is disabled, use other attraction");
-        require(balanceTokensUser() > _attractions[_name].price, "You dont have enough tokens") ;
+        require(myTokens() >= _attractions[_name].price, "You dont have enough tokens") ;
 
-        _token.transfer(_owner, _attractions[_name].price);
+        _token._transfer(msg.sender,address(this), _attractions[_name].price);
         usersDisney[msg.sender]._tokensSpent.add(_attractions[_name].price);
         usersDisney[msg.sender]._tokensRemaining.sub(_attractions[_name].price);
+        usersDisney[msg.sender]._attractions.push(_name);
 
+        emit enjoyAttraction(_name);
         return (true, usersDisney[msg.sender]._tokensRemaining);
     }
+
+    function getHistorialClient () public view returns(string [] memory){
+
+        return usersDisney[msg.sender]._attractions;
+
+    }
+
+    function returnTokens(uint _tokens) public payable returns (bool){
+        
+        require(myTokens() >= _tokens, "You dont have enough tokens");
+        require(_tokens > 0, "You number tokens are invalid");
+
+        _token._transfer(msg.sender,address(this), _tokens);
+
+        payable(msg.sender).transfer(priceTokens(_tokens));
+
+        return true;
+    }
+
+    function getOwnerTokens() public view returns (address){
+        return _token.getOwnerToken();
+    }
+
+    function withdraw() public payable isOwner(msg.sender) returns (bool){
+        payable(msg.sender).transfer(address(this).balance);
+        return true;
+    }
+
+    function myEthers() public payable returns (uint, bool) {
+        return (msg.sender.balance, true);
+    }
+    
+    function contractEthers() public payable returns (uint, bool) {
+        return (address(this).balance, true);
+    }
+
 }
